@@ -2,6 +2,8 @@ package main
 
 import (
 	"beaver/thing-relay/config"
+	"beaver/thing-relay/http"
+	"beaver/thing-relay/socket"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -24,12 +26,16 @@ func main() {
 	config.InitDb(*cfg)
 	defer cfg.DB.Close()
 
+	socketService := socket.NewSocketService()
+
 	r := gin.Default()
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, "Hello World")
 	})
 
-	// v1 := r.Group("/v1")
-	r.Run(":" + port)
+	r.GET("/ws", socket.ConnectionHandler(socketService))
+	v1 := r.Group("/v1")
+	http.NewV1Handler(v1, *socketService)
 
+	r.Run(":" + port)
 }
