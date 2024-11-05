@@ -32,7 +32,7 @@ func (s *SocketService) RegisterConnection(thingId string, connection *websocket
 func (s *SocketService) SendJson(thingId string, message interface{}) error {
 	connection, exists := s.connections[thingId]
 	if !exists {
-		return fmt.Errorf("unable to find connection to thing: %T", thingId)
+		return fmt.Errorf("unable to find connection to thing: %s", thingId)
 	}
 
 	err := connection.WriteJSON(message)

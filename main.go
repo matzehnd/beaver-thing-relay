@@ -15,6 +15,11 @@ func main() {
 	if port == "" {
 		panic("no port defined")
 	}
+	IdpUrl := os.Getenv("IDP_URL")
+
+	if IdpUrl == "" {
+		panic("no IdpUrl defined")
+	}
 
 	dbConn := os.Getenv("DB")
 
@@ -34,7 +39,7 @@ func main() {
 	})
 
 	r.GET("/ws", socket.ConnectionHandler(socketService))
-	v1 := r.Group("/v1")
+	v1 := r.Group("/v1", TokenCheck(IdpUrl))
 	http.NewV1Handler(v1, *socketService)
 
 	r.Run(":" + port)

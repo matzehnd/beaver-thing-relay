@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -13,11 +12,11 @@ import (
 
 // Struktur für die Antwort von der externen API
 type TokenResponse struct {
-	Valid bool `json:"valid"`
+	Sub string `json:"sub"`
 }
 
 // Middleware für den Token-Check
-func TokenCheck() gin.HandlerFunc {
+func TokenCheck(tokenValidationUrl string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Holen des Authorization-Headers
 		authHeader := c.GetHeader("Authorization")
@@ -37,17 +36,9 @@ func TokenCheck() gin.HandlerFunc {
 		// Extrahieren des Tokens
 		token := authHeader[7:] // Token ohne "Bearer " Präfix
 
-		// Dekodieren des Tokens (Base64)
-		decodedToken, err := base64.StdEncoding.DecodeString(token)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			c.Abort()
-			return
-		}
-
 		// Erstelle die Anfrage an die externe API
-		reqBody, _ := json.Marshal(map[string]string{"token": string(decodedToken)})
-		req, err := http.NewRequest("POST", "https://external-api.com/validate", bytes.NewBuffer(reqBody))
+		reqBody, _ := json.Marshal(map[string]string{"token": token})
+		req, err := http.NewRequest("GET", tokenValidationUrl, bytes.NewBuffer(reqBody))
 		if err != nil {
 			log.Println("Error creating request:", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
@@ -82,11 +73,7 @@ func TokenCheck() gin.HandlerFunc {
 			}
 
 			// Überprüfe, ob der Token gültig ist
-			if !tokenResp.Valid {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-				c.Abort()
-				return
-			}
+			c.Set("tokenSub", tokenResp.Sub)
 		} else {
 			// Handle den Fall, wenn die API nicht mit 200 antwortet
 			log.Println("External API returned non-200 status:", resp.Status)

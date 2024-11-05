@@ -2,6 +2,7 @@ package http
 
 import (
 	"beaver/thing-relay/socket"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ type RegisterUserTO struct {
 
 func (h *HandlerService) thingsAction(c *gin.Context) {
 	id := c.Param("id")
+	log.Println(id)
 	err := h.socketService.SendJson(id, gin.H{"hallo": "test"})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
