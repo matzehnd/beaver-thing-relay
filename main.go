@@ -1,7 +1,6 @@
 package main
 
 import (
-	"beaver/thing-relay/config"
 	"beaver/thing-relay/http"
 	"beaver/thing-relay/socket"
 	"os"
@@ -21,25 +20,16 @@ func main() {
 		panic("no IdpUrl defined")
 	}
 
-	dbConn := os.Getenv("DB")
-
-	if dbConn == "" {
-		panic("no db connection string")
-	}
-
-	cfg := config.LoadConfig(dbConn)
-	config.InitDb(*cfg)
-	defer cfg.DB.Close()
-
 	socketService := socket.NewSocketService()
 
 	r := gin.Default()
+	r.Use(TokenCheck(IdpUrl))
 	r.GET("/", func(c *gin.Context) {
 		c.String(200, "Hello World")
 	})
 
 	r.GET("/ws", socket.ConnectionHandler(socketService))
-	v1 := r.Group("/v1", TokenCheck(IdpUrl))
+	v1 := r.Group("/v1")
 	http.NewV1Handler(v1, *socketService)
 
 	r.Run(":" + port)

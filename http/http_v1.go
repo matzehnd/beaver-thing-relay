@@ -2,7 +2,6 @@ package http
 
 import (
 	"beaver/thing-relay/socket"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -15,20 +14,30 @@ type HandlerService struct {
 func NewV1Handler(router *gin.RouterGroup, socketService socket.SocketService) {
 	handler := &HandlerService{socketService: &socketService}
 	router.POST("/things/:id", handler.thingsAction)
+	router.GET("/things", handler.getThings)
 }
 
-type RegisterUserTO struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+type ActionTO struct {
+	Action string  `json:"action"`
+	Item   string  `json:"item"`
+	Value  *string `json:"value,omitempty"`
 }
 
 func (h *HandlerService) thingsAction(c *gin.Context) {
 	id := c.Param("id")
-	log.Println(id)
-	err := h.socketService.SendJson(id, gin.H{"hallo": "test"})
+	var payload ActionTO
+	if err := c.ShouldBindJSON((&payload)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err := h.socketService.SendJson(id, payload)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.Status(http.StatusAccepted)
+}
+
+func (h *HandlerService) getThings(c *gin.Context) {
+	c.JSON(http.StatusOK, h.socketService.GetConnectionIds())
 }

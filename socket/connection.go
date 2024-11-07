@@ -20,7 +20,12 @@ func ConnectionHandler(s *SocketService) func(*gin.Context) {
 			return
 		}
 		defer conn.Close()
-		s.RegisterConnection("1", conn)
+		sub, exists := gin.Get("tokenSub")
+		id, isOk := sub.(string)
+		if !exists || !isOk {
+			return
+		}
+		s.RegisterConnection(id, conn)
 
 	}
 }
